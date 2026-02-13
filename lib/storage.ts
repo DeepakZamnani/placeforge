@@ -47,16 +47,28 @@ export const saveProject = async (project: Project): Promise<void> => {
 };
 
 // Get project
+// Get project
 export const getProject = async (id: string): Promise<Project | null> => {
+  // Validate ID first
+  if (!id || id === 'undefined' || id === 'null') {
+    console.error('❌ Invalid project ID provided to getProject:', id);
+    return null;
+  }
+
   const db = await initDB();
   
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(id);
+    try {
+      const transaction = db.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(id);
 
-    request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    } catch (error) {
+      console.error('❌ Error in getProject:', error);
+      reject(error);
+    }
   });
 };
 

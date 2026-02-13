@@ -6,6 +6,7 @@ import EditorToolbar from '@/components/editor/EditorToolbar';
 import FurnitureLibrary from '@/components/editor/FurnitureLibrary';
 import PropertiesPanel from '@/components/editor/PropertiesPanel';
 import ViewportCanvas from '@/components/editor/ViewportCanvas';
+import { FurnitureItem } from '@/lib/furnitureLibrary';
 
 interface EditorPageProps {
   params: Promise<{
@@ -14,39 +15,42 @@ interface EditorPageProps {
 }
 
 export default function EditorPage({ params }: EditorPageProps) {
-  // Unwrap the params Promise
   const { projectId } = use(params);
+  
+  console.log('🎨 Editor page loaded for project:', projectId);
   
   const [selectedObject, setSelectedObject] = useState<string | null>(null);
   const [showFurnitureLibrary, setShowFurnitureLibrary] = useState(true);
   const [showProperties, setShowProperties] = useState(true);
+  const [pendingFurniture, setPendingFurniture] = useState<FurnitureItem | null>(null);
+
+  const handlePlaceFurniture = (furniture: FurnitureItem) => {
+    console.log('🪑 Placing furniture:', furniture.name);
+    setPendingFurniture(furniture);
+  };
 
   return (
     <MainLayout showSidebar={false}>
       <div className="h-full flex flex-col">
-        {/* Top Toolbar */}
         <EditorToolbar 
           projectId={projectId}
           onToggleFurnitureLibrary={() => setShowFurnitureLibrary(!showFurnitureLibrary)}
           onToggleProperties={() => setShowProperties(!showProperties)}
         />
 
-        {/* Main Editor Area */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar - Furniture Library */}
           {showFurnitureLibrary && (
-            <FurnitureLibrary />
+            <FurnitureLibrary onPlaceFurniture={handlePlaceFurniture} />
           )}
 
-          {/* Center - 3D Canvas */}
           <div className="flex-1 bg-gray-100 relative">
             <ViewportCanvas 
               projectId={projectId}
               onSelectObject={setSelectedObject}
+              onPlaceFurniture={handlePlaceFurniture}
             />
           </div>
 
-          {/* Right Sidebar - Properties Panel */}
           {showProperties && (
             <PropertiesPanel 
               selectedObjectId={selectedObject}

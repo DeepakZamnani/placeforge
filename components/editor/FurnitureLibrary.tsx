@@ -1,37 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getFurnitureLibrary, FURNITURE_CATEGORIES, FurnitureItem } from '@/lib/furnitureLibrary';
 
-// Mock furniture data
-const FURNITURE_CATEGORIES = [
-  { id: 'all', name: 'All', count: 48 },
-  { id: 'seating', name: 'Seating', count: 12 },
-  { id: 'tables', name: 'Tables', count: 8 },
-  { id: 'storage', name: 'Storage', count: 10 },
-  { id: 'beds', name: 'Beds', count: 6 },
-  { id: 'lighting', name: 'Lighting', count: 12 },
-];
+interface FurnitureLibraryProps {
+  onPlaceFurniture: (furniture: FurnitureItem) => void;
+}
 
-const MOCK_FURNITURE = [
-  { id: '1', name: 'Modern Sofa', category: 'seating', thumbnail: '🛋️' },
-  { id: '2', name: 'Dining Table', category: 'tables', thumbnail: '🪑' },
-  { id: '3', name: 'Bookshelf', category: 'storage', thumbnail: '📚' },
-  { id: '4', name: 'Bed Frame', category: 'beds', thumbnail: '🛏️' },
-  { id: '5', name: 'Floor Lamp', category: 'lighting', thumbnail: '💡' },
-  { id: '6', name: 'Armchair', category: 'seating', thumbnail: '🪑' },
-  { id: '7', name: 'Coffee Table', category: 'tables', thumbnail: '☕' },
-  { id: '8', name: 'Wardrobe', category: 'storage', thumbnail: '🚪' },
-];
-
-export default function FurnitureLibrary() {
+export default function FurnitureLibrary({ onPlaceFurniture }: FurnitureLibraryProps) {
+  const [furniture, setFurniture] = useState<FurnitureItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredFurniture = MOCK_FURNITURE.filter(item => {
+  useEffect(() => {
+    const library = getFurnitureLibrary();
+    setFurniture(library);
+  }, []);
+
+  const filteredFurniture = furniture.filter(item => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const categoryCounts = FURNITURE_CATEGORIES.map(cat => ({
+    ...cat,
+    count: cat.id === 'all' 
+      ? furniture.length 
+      : furniture.filter(f => f.category === cat.id).length
+  }));
+
+  const handleDragStart = (e: React.DragEvent, item: FurnitureItem) => {
+    console.log('🎯 Started dragging:', item.name);
+    // Store the furniture data in the drag event
+    e.dataTransfer.setData('furniture', JSON.stringify(item));
+    e.dataTransfer.effectAllowed = 'copy';
+    
+    // Optional: Create a drag image
+    if (e.dataTransfer.setDragImage) {
+      const dragImage = document.createElement('div');
+      dragImage.style.fontSize = '48px';
+      dragImage.textContent = item.thumbnail;
+      dragImage.style.position = 'absolute';
+      dragImage.style.top = '-1000px';
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 24, 24);
+      setTimeout(() => document.body.removeChild(dragImage), 0);
+    }
+  };
 
   return (
     <aside className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -62,20 +78,21 @@ export default function FurnitureLibrary() {
       {/* Categories */}
       <div className="p-4 border-b border-gray-200 overflow-x-auto">
         <div className="flex gap-2">
-          {FURNITURE_CATEGORIES.map(category => (
+          {categoryCounts.map(category => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
               className={`
-                px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition
+                px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition flex items-center gap-1.5
                 ${selectedCategory === category.id 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }
               `}
             >
-              {category.name}
-              <span className="ml-1 opacity-70">({category.count})</span>
+              <span>{category.icon}</span>
+              <span>{category.name}</span>
+              <span className="opacity-70">({category.count})</span>
             </button>
           ))}
         </div>
@@ -83,30 +100,45 @@ export default function FurnitureLibrary() {
 
       {/* Furniture Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 gap-3">
-          {filteredFurniture.map(item => (
-            <button
-              key={item.id}
-              className="group aspect-square bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-500 transition flex flex-col items-center justify-center p-3 cursor-grab active:cursor-grabbing"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('furnitureId', item.id);
-                e.dataTransfer.effectAllowed = 'copy';
-              }}
-            >
-              <div className="text-4xl mb-2">{item.thumbnail}</div>
-              <p className="text-xs text-gray-700 font-medium text-center group-hover:text-blue-600">
-                {item.name}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        {filteredFurniture.length === 0 && (
+        {filteredFurniture.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-sm text-gray-500">No furniture found</p>
           </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredFurniture.map(item => (
+              <div
+                key={item.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, item)}
+                onClick={() => onPlaceFurniture(item)}
+                className="group aspect-square bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition flex flex-col items-center justify-center p-3 cursor-grab active:cursor-grabbing"
+              >
+                <div className="text-4xl mb-2 pointer-events-none">{item.thumbnail}</div>
+                <p className="text-xs text-gray-700 font-medium text-center group-hover:text-blue-600 line-clamp-2 pointer-events-none">
+                  {item.name}
+                </p>
+                <p className="text-xs text-gray-400 mt-1 pointer-events-none">
+                  {item.dimensions.width}×{item.dimensions.depth}m
+                </p>
+              </div>
+            ))}
+          </div>
         )}
+      </div>
+
+      {/* Footer - Instructions */}
+      <div className="p-4 border-t border-gray-200 bg-blue-50">
+        <div className="flex items-start gap-2">
+          <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="text-xs text-blue-900">
+            <p className="font-semibold mb-1">How to place:</p>
+            <p className="text-blue-700">• <strong>Drag & drop</strong> into scene</p>
+            <p className="text-blue-700">• Or <strong>click</strong> then click ground</p>
+          </div>
+        </div>
       </div>
     </aside>
   );

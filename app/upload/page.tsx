@@ -70,6 +70,7 @@ export default function UploadPage() {
       
       // Generate unique project ID
       const projectId = `project-${Date.now()}`;
+      console.log('🆔 Generated project ID:', projectId);
       
       // Read file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
@@ -78,7 +79,7 @@ export default function UploadPage() {
       // Create project object
       const project = {
         id: projectId,
-        name: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+        name: file.name.replace(/\.[^/.]+$/, ''),
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type || 'model/gltf-binary',
@@ -114,12 +115,12 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Header */}
+      {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -129,7 +130,7 @@ export default function UploadPage() {
           
           <h1 className="text-xl font-bold text-gray-900">Interior3D</h1>
           
-          <div className="w-32"></div> {/* Spacer for centering */}
+          <div className="w-32"></div>
         </div>
       </header>
 
