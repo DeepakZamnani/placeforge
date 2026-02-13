@@ -119,7 +119,7 @@ export default function PlacedFurniture({
       {/* Transform Controls */}
       {isSelected && groupRef.current && (
         <TransformControls
-          object={groupRef}
+          object={groupRef.current}
           mode={transformMode}
           onMouseDown={onTransformStart}
           onMouseUp={onTransformEnd}
